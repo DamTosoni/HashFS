@@ -1,0 +1,38 @@
+Linguaggio: Python
+Mettiamo gli hash in un unico grande file (in modo da evitare di dover effettuare tante aperture e chiusure di tanti file piccoli); questo file verrà caricato all'avvio e messo all'interno di una struttura dinamica (mappa). Ogni volta che si chiude un file, cioè si fa write, si aggiorna sia la struttura dinamica che il file (in modo da non perdere dati se si stacca la corrente). Non ci sono pèroblemi di accessi concorrenti perchè tanto scriviamo su chiavi diverse della mappa. Ogni riga del file contiene una coppia chiave-valore della mappa.
+Nome del file (in modo da ridurre al minimo le possibilità che un utente crei un file con lo stesso nome; se si cerca di creare un file con lo stesso nome non permetterlo) .hashFSDataFile
+
+Directory Operations
+– readdir(path): yield directory entries for each file in the directory (dovrebbe essere ls) (SERVE per visualizzare l'hash; cioè mostro i file con insieme i relativi valori di hash)
+– mkdir(path, mode): create a directory (SERVE SOVRASCRIVERLO perchè devo mettere nel file l'hash della cartella (concateno tutti i file e poi il nome della cartella (così va bene anche per cartelle vuote) e poi faccio l'hash))
+– rmdir(path): delete an empty directory (SERVE SOVRASCRIVERLO perchè (vedi sopra))
+
+Metadata Operations
+– getattr(path): read metadata (NO perchè non dobbiamo leggere i metadati nè sovrascriverli)
+– chmod(path, mode): alter permissions (NO perchè non dobbiamo cambiare i permessi)
+– chown(path, uid, gid): alter ownership (NO perchè non dobbiamo cambiare l'owner)
+
+File Operations
+– mknod(path, mode, dev): create a file (or device) (NO perchè non dobbiamo creare devices, non ci serve per esempio attaccare un hard disk)
+– unlink(path): delete a file (SERVE SOVRASCRIVERLO perchè ci serve per cancellare l'hash del file dalla struttura e modificare quello della cartella)
+– rename(old, new): move and/or rename a file (SERVE SOVRASCRIVERLO perchè ci serve per modificare l'hash del file e quello della cartella nella struttura)
+– create(path, flags, mode) (SERVE SOVRASCRIVERLO perchè si deve aggiornare la struttura (l'hash di un file è dato dal suo contenuto concatenato al nome))
+- open(path, flags): open a file (NO perchè non deve fare altro oltre a quello che già fa)
+- read(path, length, offset, fh) (NO perchè non deve fare altro oltre a quello che già fa)
+- write(path, buf, offset, fh) (SERVE SOVRASCRIVERLO perchè si deve aggiornare la struttura (anche file e cartelle di livelli superiori))
+- truncate(path, len, fh): cut off at length (SERVE SOVRASCRIVERLO perchè se stringe troppo il file si taglia il contenuto)
+- flush(path, fh): one handle is closed (NO perchè non deve fare altro oltre a quello che già fa)
+- release(path, fh): file handle is completely closed (no errors) (NO perchè l'abbiamo già fatto nella write in modo da aggiornare solo per le scritture e non anche per le letture) (VEDERE - avvisa quando un file non è più aperto da nessuno)
+
+Operations (NO perchè fanno altro)
+• Meta operations
+– fsinit(self): initialize filesystem state after being mounted (e.g. start
+threads)
+• Other
+– statfs(path)
+– fsdestroy()
+– utimens(path, times)
+– readlink(path)
+– symlink(target, name)
+– link(target, name)
+– fsync(path, fdatasync, fh)

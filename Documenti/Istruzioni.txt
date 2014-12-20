@@ -1,0 +1,16 @@
+Filesystems di riferimento: encfs e cryptofs(?)
+
+Istruzioni:
+ - Partire da "Hello World" e poi analizzare i problemi
+ - Problema principale: calcolo efficiente dell'hash (in qualsiasi modo, con qualsiasi algoritmo di hashing)
+ - Studiare le API di FUSE
+ - Si può usare qualsiasi linguaggio di programmazione
+
+Problemi:
+ - Dove metto l'hash?
+ - Deve essere ricorsivo? (partire da normale e poi eventualmente fare ricorsivo)
+ - Ogni quanto lo aggiorno?
+ - Quanto è pesante l'aggiornamento? Quanto scala?
+ - Cosa succede se l'utente vuole mettere un file con lo stesso nome del mio hash?
+ - Capire qual è "il gioco" delle API rispetto al problema (fare sequence diagrams per tutti i casi possibili 
+   di utilizzo di un file, es.: open, write, read, close, seek,... cosa succede? è difficile? scala?)

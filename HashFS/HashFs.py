@@ -35,9 +35,27 @@ class HashFs(Fuse):
 
         Fuse.__init__(self, *args, **kw)
 
-        self.root = '/'
+        '''
+        Costruisco la directory di root per il filesystem a partire
+        dalla home
+        '''
+        from os.path import expanduser
+        home = expanduser("~")
+
+        root_directory = home + "/HashFS"
+
+        if not os.path.exists(root_directory):
+            os.makedirs(root_directory)
+
+        self.root = root_directory
         self.file_class = self.HashFSFile
 
+        '''
+        Prendo la struttura per la memorizzazione
+        degli hash
+        '''
+        from HashDataStructure.HashDataStructure import HashDataStructure
+        self.hash_data_structure = HashDataStructure(self.root)
 
     def getattr(self, path):
         return os.lstat("." + path)

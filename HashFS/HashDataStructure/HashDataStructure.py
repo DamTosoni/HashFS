@@ -83,7 +83,8 @@ class HashDataStructure(object):
             raise RuntimeError("La struttura non e' stata inizializzata")
 
         'Se sono sicuro che la struttura sia presente la posso scrivere su file'
-        out_file = open(self.__fs_file_path + self.__DATAPATH, "w")
+
+        out_file = open(self.__fs_file_path + "/" + self.__DATAPATH, "w")
         data = ""
         for item in dataStructure:
             data = data + item + ":" + dataStructure[item] + "\n"

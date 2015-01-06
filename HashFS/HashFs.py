@@ -8,6 +8,8 @@ import fcntl
 import fuse
 from fuse import Fuse
 
+from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
+
 
 if not hasattr(fuse, '__version__'):
     raise RuntimeError, \
@@ -28,21 +30,22 @@ def flag2mode(flags):
 
     return m
 
+
+'''
+Costruisco la directory di root per il filesystem a partire
+dalla home
+'''
+from os.path import expanduser
+home = expanduser("~")
+
+root_directory = home + "/HashFS"
+
 class HashFs(Fuse):
 
 
     def __init__(self, *args, **kw):
 
         Fuse.__init__(self, *args, **kw)
-
-        '''
-        Costruisco la directory di root per il filesystem a partire
-        dalla home
-        '''
-        from os.path import expanduser
-        home = expanduser("~")
-
-        root_directory = home + "/HashFS"
 
         if not os.path.exists(root_directory):
             os.makedirs(root_directory)
@@ -56,6 +59,11 @@ class HashFs(Fuse):
         '''
         from HashDataStructure.HashDataStructure import HashDataStructure
         self.hash_data_structure = HashDataStructure(self.root)
+
+        '''
+        Creo la classe per il calcolo dell'hash
+        '''
+        self.hash_calculator = HashCalculatorMD5()
 
     def getattr(self, path):
         return os.lstat("." + path)
@@ -98,6 +106,19 @@ class HashFs(Fuse):
 
     def mkdir(self, path, mode):
         os.mkdir("." + path, mode)
+
+        # A questo punto creo l'entry della cartella
+        # nella struttura degli hash
+        dir_hash = self.hash_calculator.calculateDirectoryHash("." + path)
+        self.hash_data_structure.insert_hash(root_directory + path, dir_hash)
+
+        # Ora devo sistemare anche gli eventuali genitori
+        parent_path = os.path.abspath(os.path.join(root_directory + path, os.pardir))
+        while(parent_path != root_directory):
+            # Calcolo l'hash del genitore
+            parent_hash = self.hash_calculator.calculateDirectoryHash(parent_path)
+            self.hash_data_structure.insert_hash(parent_path, parent_hash)
+            parent_path = os.path.abspath(os.path.join(parent_path, os.pardir))
 
     def utime(self, path, times):
         os.utime("." + path, times)

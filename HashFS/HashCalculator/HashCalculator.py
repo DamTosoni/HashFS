@@ -2,9 +2,11 @@
 Questa classe astratta si occupa di calcolare l'hash dei file
 del filesystem
 """
+from HashDataStructure.HashDataStructure import HashDataStructure
 class HashCalculator(object):
 
     _hash_calculator = None
+    __hashDataStructure = HashDataStructure()
 
     """
     Calcolo l'hash di un singolo file
@@ -22,21 +24,28 @@ class HashCalculator(object):
         return self._hash_calculator.hexdigest()
 
     """
-    Calcolo l'hash di una directory
+    Calcolo l'hash di una directory.
     """
     def calculateDirectoryHash(self, directory_path):
         from os import listdir
-        from os.path import isfile, join
+        from os.path import isfile, join, abspath, pardir
 
         self._hash_calculator.update(directory_path.encode(encoding='UTF-8'))
         # Prendo la lista dei figli
         children = listdir(directory_path)
-        # Calcolo l'hash dei figli
+        # Calcolo l'hash dei figli in maniera efficiente, prendendoli
+        # dalla struttura se gia' presenti
+        data = self.__hashDataStructure.get_structure_snapshot()
         for child in children:
-            if isfile(join(directory_path, child)):
-                # Calcolo l'hash con l'hash dei file contenuti nella cartella
-                self._hash_calculator.update(self.calculateFileHash(join(directory_path, child)))
+            child_path = join(directory_path, child)
+            if child_path in data:
+                self._hash_calculator.update(data[child_path])
             else:
-                self._hash_calculator.update(self.calculateDirectoryHash(join(directory_path, child)))
+                # Nell'eventualita' che il valore non sia presente lo ricalcolo
+                if isfile(child_path):
+                    # Calcolo l'hash con l'hash dei file contenuti nella cartella
+                    self._hash_calculator.update(self.calculateFileHash(child_path))
+                else:
+                    self._hash_calculator.update(self.calculateDirectoryHash(child_path))
 
         return self._hash_calculator.hexdigest()

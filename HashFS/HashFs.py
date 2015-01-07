@@ -96,9 +96,21 @@ class HashFs(Fuse):
 
     def unlink(self, path):
         os.unlink("." + path)
+        # Adesso rimuovo la relativa entry dalla struttura
+        self.hash_data_structure.remove_hash(root_directory + path)
+        # Aggiorno le eventuali directory al livello superiore
+        parent_path = os.path.abspath(os.path.join(path, os.pardir))
+        if(parent_path != "/"):
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
     def rmdir(self, path):
         os.rmdir("." + path)
+        # Adesso rimuovo la relativa entry dalla struttura
+        self.hash_data_structure.remove_hash(root_directory + path)
+        # Aggiorno le eventuali directory al livello superiore
+        parent_path = os.path.abspath(os.path.join(path, os.pardir))
+        if(parent_path != "/"):
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
     def symlink(self, path, path1):
         os.symlink(path, "." + path1)
@@ -231,6 +243,12 @@ class HashFs(Fuse):
 
     def fsinit(self):
         os.chdir(self.root)
+
+#     def fsdestroy(self, data = None):
+#         import syslog
+#         syslog.syslog(syslog.LOG_INFO, 'destroy %s: %s' % (self.mountpoint, data))
+#         os.rmdir(self.mountpoint)
+
 
     class HashFSFile(object):
 

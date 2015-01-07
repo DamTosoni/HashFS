@@ -9,6 +9,7 @@ import fuse
 from fuse import Fuse
 
 from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
+from HashDataStructure.HashDataStructure import HashDataStructure
 
 
 if not hasattr(fuse, '__version__'):
@@ -29,6 +30,24 @@ def flag2mode(flags):
         m = m.replace('w', 'a', 1)
 
     return m
+
+"""
+Questa funzione aggiorna l'hash di una directory e dei suoi
+genitori
+"""
+def updateDirectoryHash(path, hash_data_structure, hash_calculator):
+    # A questo punto creo l'entry della cartella
+    # nella struttura degli hash
+    dir_hash = hash_calculator.calculateDirectoryHash("." + path)
+    hash_data_structure.insert_hash(root_directory + path, dir_hash)
+
+    # Ora devo sistemare anche gli eventuali genitori
+    parent_path = os.path.abspath(os.path.join(root_directory + path, os.pardir))
+    while(parent_path != root_directory):
+        # Calcolo l'hash del genitore
+        parent_hash = hash_calculator.calculateDirectoryHash(parent_path)
+        hash_data_structure.insert_hash(parent_path, parent_hash)
+        parent_path = os.path.abspath(os.path.join(parent_path, os.pardir))
 
 
 '''
@@ -87,6 +106,59 @@ class HashFs(Fuse):
     def rename(self, path, path1):
         os.rename("." + path, "." + path1)
 
+        # Una volta rinominato il file o la cartella,
+        # aggiorno la struttura dati contenente gli
+        # hash
+        self.hash_data_structure.remove_hash(root_directory + path)
+
+        if os.path.isdir("." + path1):
+            # Devo modificare i figli della directory
+            self.__update_child_path(path1, path)
+            updateDirectoryHash(path1, self.hash_data_structure, self.hash_calculator)
+        else:
+            file_hash = self.hash_calculator.calculateFileHash("." + path1)
+            self.hash_data_structure.insert_hash(root_directory + path1, file_hash)
+            # Aggiorno la cartella padre
+            parent_path = os.path.abspath(os.path.join(path1, os.pardir))
+            if(parent_path != "/"):
+                updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
+
+    """
+    Questa funzione calcola in maniera ricorsiva l'hash dei figli di una
+    cartella rinominata
+    """
+    def __update_child_path(self, new_path, old_path):
+        if(os.path.isdir("." + new_path)):
+            children = os.listdir("." + new_path)
+            if(len(children)):
+                # Se entro qui vuol dire che la cartella non e' vuota
+                for child in children:
+                    child_path = os.path.join(new_path, child)
+                    if os.path.isfile(child_path):
+                        # Se e' un file mi limito a cambiarne l'hash
+                        self.hash_data_structure.remove_hash(root_directory + old_path)
+                        file_hash = self.hash_calculator.calculateFileHash("." + child_path)
+                        self.hash_data_structure.insert_hash(root_directory + new_path, file_hash)
+                    else:
+                        # Se e' una cartella vado ad aggiornare l'hash per
+                        # i livelli inferiori
+                        old_child_path = os.path.join(old_path, child)
+                        self.__update_child_path(child_path, old_child_path)
+            else:
+                # Se sono all'ultimo livello Aggiorno l'intera struttura
+                updateDirectoryHash(new_path, self.hash_data_structure, self.hash_calculator)
+        else:
+            # All'ultimo livello vi era un file
+            file_hash = self.hash_calculator.calculateFileHash("." + new_path)
+            self.hash_data_structure.insert_hash(root_directory + new_path, file_hash)
+            # Aggiorno la cartella padre
+            parent_path = os.path.abspath(os.path.join(new_path, os.pardir))
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
+
+        # Rimuovo la vecchia entry dalla struttura
+        self.hash_data_structure.remove_hash(root_directory + old_path)
+
+
     def link(self, path, path1):
         os.link("." + path, "." + path1)
 
@@ -106,19 +178,8 @@ class HashFs(Fuse):
 
     def mkdir(self, path, mode):
         os.mkdir("." + path, mode)
-
-        # A questo punto creo l'entry della cartella
-        # nella struttura degli hash
-        dir_hash = self.hash_calculator.calculateDirectoryHash("." + path)
-        self.hash_data_structure.insert_hash(root_directory + path, dir_hash)
-
-        # Ora devo sistemare anche gli eventuali genitori
-        parent_path = os.path.abspath(os.path.join(root_directory + path, os.pardir))
-        while(parent_path != root_directory):
-            # Calcolo l'hash del genitore
-            parent_hash = self.hash_calculator.calculateDirectoryHash(parent_path)
-            self.hash_data_structure.insert_hash(parent_path, parent_hash)
-            parent_path = os.path.abspath(os.path.join(parent_path, os.pardir))
+        # Aggiungo l'hash di questa directory e aggiorno i genitori
+        updateDirectoryHash(path, self.hash_data_structure, self.hash_calculator)
 
     def utime(self, path, times):
         os.utime("." + path, times)

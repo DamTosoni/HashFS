@@ -28,7 +28,7 @@ class HashCalculator(object):
     """
     def calculateDirectoryHash(self, directory_path):
         from os import listdir
-        from os.path import isfile, join, abspath, pardir
+        from os.path import isfile, join
 
         self._hash_calculator.update(directory_path.encode(encoding='UTF-8'))
         # Prendo la lista dei figli

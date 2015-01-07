@@ -113,3 +113,13 @@ class HashDataStructure(object):
         data[fileName] = content
         self.__write_data_structure(data)
         self.release_data_structure()
+
+    """
+    Questo metodo elimina un hash dalla struttura modificando
+    anche il file su cui e' memorizzato
+    """
+    def remove_hash(self, fileName):
+        data = self.get_data_structure_instance()
+        data.pop(fileName, None)
+        self.__write_data_structure(data)
+        self.release_data_structure()

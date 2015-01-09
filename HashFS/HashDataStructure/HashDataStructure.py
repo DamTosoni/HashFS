@@ -3,15 +3,14 @@ class HashDataStructure(object):
 
     __INSTANCE = None
     __dataMap = None
-    __fs_file_path = None
+    __fs_root = None
 
     __structureLock = None  # Semaforo per accedere alla struttura
 
     __DATAPATH = '.hashFSDataFile'  # Path del file degli hash
 
-    def __init__(self, fs_file_path=""):
-        self. __fs_file_path = fs_file_path  # Directory nella quale e' stato
-                                            # montato il filesystem
+    def __init__(self, fs_root=""):
+        self. __fs_root = fs_root  # Root del filsesystem
         if self.__INSTANCE is not None:
             raise ValueError("La classe HashDataStructure e' gia' stata inizializzata")
 
@@ -57,10 +56,10 @@ class HashDataStructure(object):
     def __inizialize_data_map(self):
         'Controllo se esiste il file degli hash'
         import os.path
-        if os.path.isfile(self.__fs_file_path + self.__DATAPATH):
+        if os.path.isfile(self.__fs_root + self.__DATAPATH):
             self.__load_data_map_from_file()
         else:
-            out_file = open(self.__fs_file_path + self.__DATAPATH, "w")
+            out_file = open(self.__fs_root + self.__DATAPATH, "w")
             out_file.close()
             HashDataStructure.__dataMap = dict()
 
@@ -69,7 +68,7 @@ class HashDataStructure(object):
     """
     def __load_data_map_from_file(self):
         HashDataStructure.__dataMap = dict()
-        in_file = open(self.__fs_file_path + self.__DATAPATH, "r")
+        in_file = open(self.__fs_root + self.__DATAPATH, "r")
         for line in in_file:
             l = line.split(":")
             HashDataStructure.__dataMap[l[0]] = l[1][:-1]
@@ -84,7 +83,7 @@ class HashDataStructure(object):
 
         'Se sono sicuro che la struttura sia presente la posso scrivere su file'
 
-        out_file = open(self.__fs_file_path + "/" + self.__DATAPATH, "w")
+        out_file = open(self.__fs_root + "/" + self.__DATAPATH, "w")
         data = ""
         for item in dataStructure:
             data = data + item + ":" + dataStructure[item] + "\n"

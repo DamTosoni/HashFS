@@ -58,6 +58,8 @@ from os.path import expanduser
 home = expanduser("~")
 
 root_directory = home + "/HashFS"
+hash_data_structure = HashDataStructure(root_directory)
+hash_calculator = HashCalculatorMD5()
 
 class HashFs(Fuse):
 
@@ -76,13 +78,12 @@ class HashFs(Fuse):
         Prendo la struttura per la memorizzazione
         degli hash
         '''
-        from HashDataStructure.HashDataStructure import HashDataStructure
-        self.hash_data_structure = HashDataStructure(self.root)
+        self.hash_data_structure = hash_data_structure
 
         '''
         Creo la classe per il calcolo dell'hash
         '''
-        self.hash_calculator = HashCalculatorMD5()
+        self.hash_calculator = hash_calculator
 
     def getattr(self, path):
         return os.lstat("." + path)
@@ -114,6 +115,13 @@ class HashFs(Fuse):
 
     def symlink(self, path, path1):
         os.symlink(path, "." + path1)
+        # Aggiungo l'entry nella struttura e aggiorno i genitori
+        file_hash = self.hash_calculator.calculateFileHash("." + path1)
+        self.hash_data_structure.insert_hash(root_directory + path1,file_hash)
+        parent_path = os.path.abspath(os.path.join(path1, os.pardir))
+        if(parent_path != "/"):
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
+
 
     def rename(self, path, path1):
         os.rename("." + path, "." + path1)
@@ -187,6 +195,12 @@ class HashFs(Fuse):
 
     def mknod(self, path, mode, dev):
         os.mknod("." + path, mode, dev)
+        # Aggiungo l'entry nella struttura e aggiorno i genitori
+        file_hash = self.hash_calculator.calculateFileHash("." + path)
+        self.hash_data_structure.insert_hash(root_directory + path, file_hash)
+        parent_path = os.path.abspath(os.path.join(path, os.pardir))
+        if(parent_path != "/"):
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
     def mkdir(self, path, mode):
         os.mkdir("." + path, mode)
@@ -253,9 +267,36 @@ class HashFs(Fuse):
     class HashFSFile(object):
 
         def __init__(self, path, flags, *mode):
-            self.file = os.fdopen(os.open("." + path, flags, *mode),
-                                  flag2mode(flags))
-            self.fd = self.file.fileno()
+
+            '''
+            Prendo la struttura per la memorizzazione
+            degli hash
+            '''
+            self.hash_data_structure = hash_data_structure
+
+            '''
+            Creo la classe per il calcolo dell'hash
+            '''
+            self.hash_calculator = hash_calculator
+
+            if(os.path.isfile("." + path)):
+
+                self.file = os.fdopen(os.open("." + path, flags, *mode),
+                                      flag2mode(flags))
+                self.fd = self.file.fileno()
+            else:
+                # Se entro qui sto creando il file per la prima volta o vi
+                # sto scrivendo all'interno;
+                # di conseguenza creo l'entry all'interno della struttura
+                self.file = os.fdopen(os.open("." + path, flags, *mode),
+                                      flag2mode(flags))
+                self.fd = self.file.fileno()
+                # Aggiungo l'entry nella struttura e aggiorno i genitori
+                file_hash = self.hash_calculator.calculateFileHash("." + path)
+                self.hash_data_structure.insert_hash(root_directory + path, file_hash)
+                parent_path = os.path.abspath(os.path.join(path, os.pardir))
+                if(parent_path != "/"):
+                    updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
         def read(self, length, offset):
             self.file.seek(offset)

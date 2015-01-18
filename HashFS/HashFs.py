@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
 import os, sys
+import fcntl
 from errno import *
 from stat import *
-import fcntl
 
+# Importo FUSE
 import fuse
 from fuse import Fuse
 
+# Importo la strutura contenente gli hash e la funzione per calcolare un hash
 from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
 from HashDataStructure.HashDataStructure import HashDataStructure
 
@@ -32,16 +34,14 @@ def flag2mode(flags):
     return m
 
 """
-Questa funzione aggiorna l'hash di una directory e dei suoi
-genitori
+Questa funzione aggiorna l'hash di una directory e dei suoi genitori
 """
 def updateDirectoryHash(path, hash_data_structure, hash_calculator):
-    # A questo punto creo l'entry della cartella
-    # nella struttura degli hash
+    # Creo l'entry della cartella nella struttura degli hash
     dir_hash = hash_calculator.calculateDirectoryHash("." + path)
     hash_data_structure.insert_hash(root_directory + path, dir_hash)
 
-    # Ora devo sistemare anche gli eventuali genitori
+    # Aggiorno gli eventuali genitori
     parent_path = os.path.abspath(os.path.join(root_directory + path, os.pardir))
     while(parent_path != root_directory):
         # Calcolo l'hash del genitore
@@ -51,8 +51,7 @@ def updateDirectoryHash(path, hash_data_structure, hash_calculator):
 
 
 '''
-Costruisco la directory di root per il filesystem a partire
-dalla home
+Costruisco la directory di root per il filesystem a partire dalla home
 '''
 from os.path import expanduser
 home = expanduser("~")
@@ -61,8 +60,7 @@ root_directory = home + "/HashFS"
 hash_data_structure = HashDataStructure(root_directory)
 hash_calculator = HashCalculatorMD5()
 
-class HashFs(Fuse):
-
+class HashFs(Fuse): # Gestione del filesystem
 
     def __init__(self, *args, **kw):
 
@@ -74,15 +72,10 @@ class HashFs(Fuse):
         self.root = root_directory
         self.file_class = self.HashFSFile
 
-        '''
-        Prendo la struttura per la memorizzazione
-        degli hash
-        '''
+        # Prendo la struttura per la memorizzazione degli hash
         self.hash_data_structure = hash_data_structure
 
-        '''
-        Creo la classe per il calcolo dell'hash
-        '''
+        # Creo la classe per il calcolo dell'hash
         self.hash_calculator = hash_calculator
 
     def getattr(self, path):
@@ -97,7 +90,7 @@ class HashFs(Fuse):
 
     def unlink(self, path):
         os.unlink("." + path)
-        # Adesso rimuovo la relativa entry dalla struttura
+        # Rimuovo la relativa entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + path)
         # Aggiorno le eventuali directory al livello superiore
         parent_path = os.path.abspath(os.path.join(path, os.pardir))
@@ -106,7 +99,7 @@ class HashFs(Fuse):
 
     def rmdir(self, path):
         os.rmdir("." + path)
-        # Adesso rimuovo la relativa entry dalla struttura
+        # Rimuovo la relativa entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + path)
         # Aggiorno le eventuali directory al livello superiore
         parent_path = os.path.abspath(os.path.join(path, os.pardir))
@@ -126,13 +119,11 @@ class HashFs(Fuse):
     def rename(self, path, path1):
         os.rename("." + path, "." + path1)
 
-        # Una volta rinominato il file o la cartella,
-        # aggiorno la struttura dati contenente gli
-        # hash
+        # Una volta rinominato il file o la cartella, aggiorno la struttura dati contenente gli hash
         self.hash_data_structure.remove_hash(root_directory + path)
 
         if os.path.isdir("." + path1):
-            # Devo modificare i figli della directory
+            # Modifico i figli della directory
             self.__update_child_path(path1, path)
             updateDirectoryHash(path1, self.hash_data_structure, self.hash_calculator)
         else:
@@ -144,8 +135,7 @@ class HashFs(Fuse):
                 updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
     """
-    Questa funzione calcola in maniera ricorsiva l'hash dei figli di una
-    cartella rinominata
+    Questa funzione calcola in maniera ricorsiva l'hash dei figli di una cartella rinominata
     """
     def __update_child_path(self, new_path, old_path):
         if(os.path.isdir("." + new_path)):
@@ -160,12 +150,11 @@ class HashFs(Fuse):
                         file_hash = self.hash_calculator.calculateFileHash("." + child_path)
                         self.hash_data_structure.insert_hash(root_directory + new_path, file_hash)
                     else:
-                        # Se e' una cartella vado ad aggiornare l'hash per
-                        # i livelli inferiori
+                        # Se e' una cartella vado ad aggiornare l'hash per i livelli inferiori
                         old_child_path = os.path.join(old_path, child)
                         self.__update_child_path(child_path, old_child_path)
             else:
-                # Se sono all'ultimo livello Aggiorno l'intera struttura
+                # Se sono all'ultimo livello aggiorno l'intera struttura
                 updateDirectoryHash(new_path, self.hash_data_structure, self.hash_calculator)
         else:
             # All'ultimo livello vi era un file
@@ -234,6 +223,42 @@ class HashFs(Fuse):
 #            return len("".join(aa)) + len(aa)
 #        return aa
 
+###############################################################################################
+# In teoria adesso dovrebbe essere sufficiente richiamare questi metodi nei punti giusti
+# (per esempio il metodo "setxattr" quando si calcola un hash o "removexattr" e poi "setxattr"
+#  quando si deve aggiornarlo). Non lo faccio per evitare casini...
+
+#     def setxattr(self, path, name, value, size, options, *args):
+#         data = string_at(value, size)
+#         return self.operations('setxattr', path, name, data, options, *args)
+
+#     def getxattr(self, path, name, value, size, *args):
+#         ret = self.operations('getxattr', path, name, *args)
+#         retsize = len(ret)
+#         buf = create_string_buffer(ret, retsize)    # Does not add trailing 0
+#         if bool(value):
+#             if retsize > size:
+#                 return -ERANGE
+#             memmove(value, buf, retsize)
+#         return retsize
+
+#     def listxattr(self, path, namebuf, size):
+#         ret = self.operations('listxattr', path)
+#         if ret:
+#           buf = create_string_buffer('\x00'.join(ret))
+#         else:
+#           buf = ''
+#         bufsize = len(buf)
+#         if bool(namebuf):
+#             if bufsize > size:
+#                 return -ERANGE
+#             memmove(namebuf, buf, bufsize)
+#         return bufsize
+
+#     def removexattr(self, path, name):
+#         return self.operations('removexattr', path, name)
+
+
     def statfs(self):
         """
         Should return an object with statvfs attributes (f_bsize, f_frsize...).
@@ -264,30 +289,23 @@ class HashFs(Fuse):
 #         os.rmdir(self.mountpoint)
 
 
-    class HashFSFile(object):
+    class HashFSFile(object): # Gestione dei file
 
         def __init__(self, path, flags, *mode):
 
-            '''
-            Prendo la struttura per la memorizzazione
-            degli hash
-            '''
+            # Prendo la struttura per la memorizzazione degli hash
             self.hash_data_structure = hash_data_structure
 
-            '''
-            Creo la classe per il calcolo dell'hash
-            '''
+            # Creo la classe per il calcolo dell'hash
             self.hash_calculator = hash_calculator
 
             if(os.path.isfile("." + path)):
-
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
                                       flag2mode(flags))
                 self.fd = self.file.fileno()
             else:
                 # Se entro qui sto creando il file per la prima volta o vi
-                # sto scrivendo all'interno;
-                # di conseguenza creo l'entry all'interno della struttura
+                # sto scrivendo all'interno, di conseguenza creo l'entry all'interno della struttura
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
                                       flag2mode(flags))
                 self.fd = self.file.fileno()

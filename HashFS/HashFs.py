@@ -118,7 +118,7 @@ class HashFs(Fuse): # Gestione del filesystem
 
     def rename(self, path, path1):
         os.rename("." + path, "." + path1)
-
+        
         # Una volta rinominato il file o la cartella, aggiorno la struttura dati contenente gli hash
         self.hash_data_structure.remove_hash(root_directory + path)
 
@@ -203,61 +203,27 @@ class HashFs(Fuse): # Gestione del filesystem
         if not os.access("." + path, mode):
             return -EACCES
 
-#    This is how we could add stub extended attribute handlers...
-#    (We can't have ones which aptly delegate requests to the underlying fs
-#    because Python lacks a standard xattr interface.)
-#
-#    def getxattr(self, path, name, size):
-#        val = name.swapcase() + '@' + path
-#        if size == 0:
-#            # We are asked for size of the value.
-#            return len(val)
-#        return val
-#
-#    def listxattr(self, path, size):
-#        # We use the "user" namespace to please XFS utils
-#        aa = ["user." + a for a in ("foo", "bar")]
-#        if size == 0:
-#            # We are asked for size of the attr list, ie. joint size of attrs
-#            # plus null separators.
-#            return len("".join(aa)) + len(aa)
-#        return aa
+    """
+    Metodi per la gestione dell'attributo esteso (l'hash del file o cartella)
+    Per vedere l'hash: getfattr -n hash nomeFileOCartella 
+    """
 
-###############################################################################################
-# In teoria adesso dovrebbe essere sufficiente richiamare questi metodi nei punti giusti
-# (per esempio il metodo "setxattr" quando si calcola un hash o "removexattr" e poi "setxattr"
-#  quando si deve aggiornarlo). Non lo faccio per evitare casini...
+    def getxattr(self, path, name, size):
+        value = self.hash_data_structure.get_file_hash(self.root + path)
+        if size == 0:
+            # We are asked for size of the attr list, ie. joint size of attrs
+            # plus null separators.
+            return len(value)
+        return value
 
-#     def setxattr(self, path, name, value, size, options, *args):
-#         data = string_at(value, size)
-#         return self.operations('setxattr', path, name, data, options, *args)
+    def listxattr(self, path, size):
+        attrs = ["hash"]
+        if size == 0:
+            return len(attrs) + len("".join(attrs))
+        return attrs
 
-#     def getxattr(self, path, name, value, size, *args):
-#         ret = self.operations('getxattr', path, name, *args)
-#         retsize = len(ret)
-#         buf = create_string_buffer(ret, retsize)    # Does not add trailing 0
-#         if bool(value):
-#             if retsize > size:
-#                 return -ERANGE
-#             memmove(value, buf, retsize)
-#         return retsize
-
-#     def listxattr(self, path, namebuf, size):
-#         ret = self.operations('listxattr', path)
-#         if ret:
-#           buf = create_string_buffer('\x00'.join(ret))
-#         else:
-#           buf = ''
-#         bufsize = len(buf)
-#         if bool(namebuf):
-#             if bufsize > size:
-#                 return -ERANGE
-#             memmove(namebuf, buf, bufsize)
-#         return bufsize
-
-#     def removexattr(self, path, name):
-#         return self.operations('removexattr', path, name)
-
+    def removexattr(self, path):
+        del self._storage[path]
 
     def statfs(self):
         """
@@ -298,6 +264,8 @@ class HashFs(Fuse): # Gestione del filesystem
 
             # Creo la classe per il calcolo dell'hash
             self.hash_calculator = hash_calculator
+
+            self.root = root_directory
 
             if(os.path.isfile("." + path)):
                 self.file = os.fdopen(os.open("." + path, flags, *mode),

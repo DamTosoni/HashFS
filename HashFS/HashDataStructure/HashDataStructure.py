@@ -1,16 +1,18 @@
 from threading import Lock
+# from HashFs import hash_calculator
 class HashDataStructure(object):
 
     __INSTANCE = None
     __dataMap = None
     __fs_root = None
+    __upToDate = True
 
     __structureLock = None  # Semaforo per accedere alla struttura
 
     __DATAPATH = '.hashFSDataFile'  # Path del file degli hash
 
     def __init__(self, fs_root=""):
-        self. __fs_root = fs_root  # Root del filsesystem
+        self.__fs_root = fs_root  # Root del filsesystem
         if self.__INSTANCE is not None:
             raise ValueError("La classe HashDataStructure e' gia' stata inizializzata")
 
@@ -23,7 +25,11 @@ class HashDataStructure(object):
     @classmethod
     def get_data_structure_instance(cls):
         if cls.__INSTANCE is None:
-            cls.__INSTANCE = HashDataStructure()
+            from os.path import expanduser
+            home = expanduser("~")
+            root_directory = home + "/HashFS"
+
+            cls.__INSTANCE = HashDataStructure(root_directory)
             cls.__structureLock = Lock()
             cls.__structureLock.acquire()
             # Inizializzo la struttura dati
@@ -61,6 +67,7 @@ class HashDataStructure(object):
         else:
             out_file = open(self.__fs_root + self.__DATAPATH, "w")
             out_file.close()
+            self.__upToDate = True
             HashDataStructure.__dataMap = dict()
 
     """
@@ -69,26 +76,60 @@ class HashDataStructure(object):
     def __load_data_map_from_file(self):
         HashDataStructure.__dataMap = dict()
         in_file = open(self.__fs_root + self.__DATAPATH, "r")
-        for line in in_file:
-            l = line.split(":")
-            HashDataStructure.__dataMap[l[0]] = l[1][:-1]
-        in_file.close()
+
+        ' Nella prima riga memorizzo un booleano che indica se '
+        ' il filesystem e\' corrotto e serve quindi ricalcolare '
+        ' tutti gli hash '
+
+        #FIXME: Devo cambiare il file!!!!!!!!!!
+        self.__upToDate = in_file.readline()
+        upToDate = False
+
+        if(not upToDate):
+            self.__reloadAllHashes()
+        else:
+            'Carico gli hash da file'
+            for line in in_file:
+                l = line.split(":")
+                HashDataStructure.__dataMap[l[0]] = l[1][:-1]
+            in_file.close()
+
+    """
+    Ricalcolo tutti gli hash dal filesystem
+    """
+    def __reloadAllHashes(self):
+        HashDataStructure.__structureLock.release()
+        import os
+        child_list = os.listdir(self.__fs_root)
+        for child in child_list:
+            if child != self.__DATAPATH:
+                from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
+                hashCalculator = HashCalculatorMD5()
+                if os.path.isfile("./" + child):
+                    child_hash = hashCalculator.calculateFileHash("./" + child)
+                else:
+                    child_hash = hashCalculator.calculateDirectoryHash("./" + child, self.__fs_root, HashDataStructure.__dataMap)
+                HashDataStructure.__dataMap[self.__fs_root + "/" + child] = child_hash
+        HashDataStructure.__structureLock.acquire()
 
     """
     Questo metodo salva su file la mappa degli hash
     """
-    def __write_data_structure(self, dataStructure):
+    def write_data_structure(self):
+        dataStructure = self.get_data_structure_instance()
         if HashDataStructure.__dataMap is None:
             raise RuntimeError("La struttura non e' stata inizializzata")
 
         'Se sono sicuro che la struttura sia presente la posso scrivere su file'
 
         out_file = open(self.__fs_root + "/" + self.__DATAPATH, "w")
-        data = ""
+        self.__upToDate = True
+        data = "" + self.__upToDate + "\n"
         for item in dataStructure:
             data = data + item + ":" + dataStructure[item] + "\n"
         out_file.write(data)
         out_file.close()
+        self.release_data_structure()
 
     """
     Questo metodo prende solo l'hash del file a cui sono interessato. Se non
@@ -109,8 +150,8 @@ class HashDataStructure(object):
     """
     def insert_hash(self, fileName, content):
         data = self.get_data_structure_instance()
+        self.__upToDate = False
         data[fileName] = content
-        self.__write_data_structure(data)
         self.release_data_structure()
 
     """
@@ -119,6 +160,6 @@ class HashDataStructure(object):
     """
     def remove_hash(self, fileName):
         data = self.get_data_structure_instance()
+        self.__upToDate = False
         data.pop(fileName, None)
-        self.__write_data_structure(data)
         self.release_data_structure()

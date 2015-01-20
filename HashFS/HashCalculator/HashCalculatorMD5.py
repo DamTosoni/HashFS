@@ -8,3 +8,7 @@ class HashCalculatorMD5(HashCalculator):
     def __init__(self):
         import hashlib
         self._hash_calculator = hashlib.md5()
+
+    def create_hash_calculator(self):
+        import hashlib
+        self._hash_calculator = hashlib.md5()

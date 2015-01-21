@@ -197,6 +197,13 @@ class HashFs(Fuse):  # Gestione del filesystem
         f.truncate(len)
         f.close()
 
+        # Aggiungo l'entry nella struttura e aggiorno i genitori
+        file_hash = self.hash_calculator.calculateFileHash("." + path)
+        self.hash_data_structure.insert_hash(root_directory + path, file_hash)
+        parent_path = os.path.abspath(os.path.join(path, os.pardir))
+        if(parent_path != "/"):
+            updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
+
     def mknod(self, path, mode, dev):
         os.mknod("." + path, mode, dev)
 

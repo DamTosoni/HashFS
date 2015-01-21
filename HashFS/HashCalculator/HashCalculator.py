@@ -1,6 +1,5 @@
 """
-Questa classe astratta si occupa di calcolare l'hash dei file
-del filesystem
+Questa classe astratta si occupa di calcolare l'hash dei file del filesystem
 """
 # from HashDataStructure.HashDataStructure import HashDataStructure
 class HashCalculator(object):
@@ -24,7 +23,7 @@ class HashCalculator(object):
         return self._hash_calculator.hexdigest()
 
     """
-    Calcolo l'hash di una directory.
+    Calcolo l'hash di una directory
     """
     def calculateDirectoryHash(self, directory_path, root_directory, hash_data_structure):
         from os import listdir
@@ -33,8 +32,10 @@ class HashCalculator(object):
         self.create_hash_calculator()
 
         self._hash_calculator.update(directory_path.encode(encoding='UTF-8'))
+
         # Prendo la lista dei figli
         children = listdir(directory_path)
+
         # Calcolo l'hash dei figli in maniera efficiente, prendendoli
         # dalla struttura se gia' presenti
         for child in children:
@@ -49,6 +50,7 @@ class HashCalculator(object):
                 else:
                     childrenHash = self.calculateDirectoryHash(child_path, root_directory, hash_data_structure)
                 self._hash_calculator.update(childrenHash)
+                
                 # Aggiungo l'hash mancante alla struttura
                 hash_data_structure[root_directory + child_path[1:]] = childrenHash
 

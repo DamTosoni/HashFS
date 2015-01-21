@@ -8,7 +8,7 @@ from errno import EINVAL, EACCES, EOPNOTSUPP
 import fuse
 from fuse import Fuse
 
-# Importo la strutura contenente gli hash e la funzione per calcolare un hash
+# Importo la struttura contenente gli hash e la funzione per calcolare un hash
 from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
 from HashDataStructure.HashDataStructure import HashDataStructure
 
@@ -32,6 +32,7 @@ def flag2mode(flags):
 
     return m
 
+
 """
 Questa funzione aggiorna l'hash di una directory e dei suoi genitori
 """
@@ -42,6 +43,7 @@ def updateDirectoryHash(path, hash_data_structure, hash_calculator):
 
     # Aggiorno gli eventuali genitori
     parent_path = os.path.abspath(os.path.join(root_directory + path, os.pardir))
+
     while(parent_path != root_directory):
         # Calcolo l'hash del genitore
         parent_hash = hash_calculator.calculateDirectoryHash(parent_path, root_directory, hash_data_structure.get_structure_snapshot())
@@ -58,6 +60,7 @@ home = expanduser("~")
 root_directory = home + "/HashFS"
 hash_data_structure = HashDataStructure(root_directory)
 hash_calculator = HashCalculatorMD5()
+
 
 class HashFs(Fuse):  # Gestione del filesystem
 
@@ -88,13 +91,14 @@ class HashFs(Fuse):  # Gestione del filesystem
             yield fuse.Direntry(e)
 
     def unlink(self, path):
-
         if (path == "/.hashFSDataFile"):
                 raise EnvironmentError("Operation not permitted")
 
         os.unlink("." + path)
+
         # Rimuovo la relativa entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + path)
+
         # Aggiorno le eventuali directory al livello superiore
         parent_path = os.path.abspath(os.path.join(path, os.pardir))
         if(parent_path != "/"):
@@ -102,8 +106,10 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def rmdir(self, path):
         os.rmdir("." + path)
+
         # Rimuovo la relativa entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + path)
+
         # Aggiorno le eventuali directory al livello superiore
         parent_path = os.path.abspath(os.path.join(path, os.pardir))
         if(parent_path != "/"):
@@ -111,6 +117,7 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def symlink(self, path, path1):
         os.symlink(path, "." + path1)
+
         # Aggiungo l'entry nella struttura e aggiorno i genitori
         file_hash = self.hash_calculator.calculateFileHash("." + path1)
         self.hash_data_structure.insert_hash(root_directory + path1, file_hash)
@@ -118,9 +125,7 @@ class HashFs(Fuse):  # Gestione del filesystem
         if(parent_path != "/"):
             updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
-
     def rename(self, path, path1):
-
         if (path == "/.hashFSDataFile"):
                 raise EnvironmentError("Operation not permitted")
 
@@ -136,6 +141,7 @@ class HashFs(Fuse):  # Gestione del filesystem
         else:
             file_hash = self.hash_calculator.calculateFileHash("." + path1)
             self.hash_data_structure.insert_hash(root_directory + path1, file_hash)
+
             # Aggiorno la cartella padre
             parent_path = os.path.abspath(os.path.join(path1, os.pardir))
             if(parent_path != "/"):
@@ -167,13 +173,13 @@ class HashFs(Fuse):  # Gestione del filesystem
             # All'ultimo livello vi era un file
             file_hash = self.hash_calculator.calculateFileHash("." + new_path)
             self.hash_data_structure.insert_hash(root_directory + new_path, file_hash)
+
             # Aggiorno la cartella padre
             parent_path = os.path.abspath(os.path.join(new_path, os.pardir))
             updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
         # Rimuovo la vecchia entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + old_path)
-
 
     def link(self, path, path1):
         os.link("." + path, "." + path1)
@@ -193,6 +199,7 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def mknod(self, path, mode, dev):
         os.mknod("." + path, mode, dev)
+
         # Aggiungo l'entry nella struttura e aggiorno i genitori
         file_hash = self.hash_calculator.calculateFileHash("." + path)
         self.hash_data_structure.insert_hash(root_directory + path, file_hash)
@@ -202,6 +209,7 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def mkdir(self, path, mode):
         os.mkdir("." + path, mode)
+
         # Aggiungo l'hash di questa directory e aggiorno i genitori
         updateDirectoryHash(path, self.hash_data_structure, self.hash_calculator)
 
@@ -290,7 +298,7 @@ class HashFs(Fuse):  # Gestione del filesystem
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
                                       flag2mode(flags))
                 self.fd = self.file.fileno()
-
+                
                 # Aggiungo l'entry nella struttura e aggiorno i genitori
                 file_hash = self.hash_calculator.calculateFileHash("." + path)
                 self.hash_data_structure.insert_hash(root_directory + path, file_hash)

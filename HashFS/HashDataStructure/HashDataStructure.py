@@ -34,9 +34,11 @@ class HashDataStructure(object):
             cls.__INSTANCE = HashDataStructure(root_directory)
             cls.__structureLock = Lock()
             cls.__structureLock.acquire()
+
             # Inizializzo la struttura dati
             cls.__upToDate = HashDataStructure.__read_boolean_file(HashDataStructure.__INSTANCE)
             HashDataStructure.__inizialize_data_map(HashDataStructure.__INSTANCE)
+
             # Aggiorno il booleano
             HashDataStructure.__update_boolean_file(HashDataStructure.__INSTANCE, "False")
         else:
@@ -65,7 +67,7 @@ class HashDataStructure(object):
     hash dei file caricandoli da .hashFSDataFile
     """
     def __inizialize_data_map(self):
-        'Controllo se esiste il file degli hash'
+        # Controllo se esiste il file degli hash
         import os.path
         if os.path.isfile(self.__fs_root + "/" + self.__DATAPATH):
             self.__load_data_map_from_file()
@@ -84,7 +86,8 @@ class HashDataStructure(object):
             self.__reloadAllHashes()
         else:
             in_file = open(self.__fs_root + "/" + self.__DATAPATH, "r")
-            'Carico gli hash da file'
+
+            # Carico gli hash da file
             for line in in_file:
                 l = line.split(":")
                 HashDataStructure.__dataMap[l[0]] = l[1][:-1]
@@ -116,8 +119,7 @@ class HashDataStructure(object):
         if HashDataStructure.__dataMap is None:
             raise RuntimeError("La struttura non e' stata inizializzata")
 
-        'Se sono sicuro che la struttura sia presente la posso scrivere su file'
-
+        # Se sono sicuro che la struttura sia presente la posso scrivere su file
         out_file = open(self.__fs_root + "/" + self.__DATAPATH, "w")
         data = ""
         for item in dataStructure:
@@ -140,7 +142,9 @@ class HashDataStructure(object):
             result = data[fileName]
         except Exception:
             result = None
-        self.release_data_structure()  # Rilascio la struttura
+
+        # Rilascio la struttura
+        self.release_data_structure()
         return result
 
     """
@@ -149,6 +153,7 @@ class HashDataStructure(object):
     """
     def insert_hash(self, fileName, content):
         data = self.get_data_structure_instance()
+
         # Aggiorno il booleano
         data[fileName] = content
         self.release_data_structure()
@@ -159,6 +164,7 @@ class HashDataStructure(object):
     """
     def remove_hash(self, fileName):
         data = self.get_data_structure_instance()
+        
         # Aggiorno il booleano
         data.pop(fileName, None)
         self.release_data_structure()

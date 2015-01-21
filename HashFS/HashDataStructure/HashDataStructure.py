@@ -5,11 +5,13 @@ class HashDataStructure(object):
     __INSTANCE = None
     __dataMap = None
     __fs_root = None
-    __upToDate = True
+    __upToDate = "True"
 
     __structureLock = None  # Semaforo per accedere alla struttura
 
     __DATAPATH = '.hashFSDataFile'  # Path del file degli hash
+    __CONTROLPATH = '.hashFSUpToDate'  # Path del file contenente il booleano che indica se il file degli hash e' aggiornato
+
 
     def __init__(self, fs_root=""):
         self.__fs_root = fs_root  # Root del filsesystem
@@ -67,7 +69,8 @@ class HashDataStructure(object):
         else:
             out_file = open(self.__fs_root + self.__DATAPATH, "w")
             out_file.close()
-            self.__upToDate = True
+            # Aggiorno il booleano
+            self.update_boolean_file("True")
             HashDataStructure.__dataMap = dict()
 
     """
@@ -77,15 +80,9 @@ class HashDataStructure(object):
         HashDataStructure.__dataMap = dict()
         in_file = open(self.__fs_root + self.__DATAPATH, "r")
 
-        ' Nella prima riga memorizzo un booleano che indica se '
-        ' il filesystem e\' corrotto e serve quindi ricalcolare '
-        ' tutti gli hash '
-
-        #FIXME: Devo cambiare il file!!!!!!!!!!
         self.__upToDate = in_file.readline()
-        upToDate = False
 
-        if(not upToDate):
+        if(self.__upToDate != "True"):
             self.__reloadAllHashes()
         else:
             'Carico gli hash da file'
@@ -102,7 +99,7 @@ class HashDataStructure(object):
         import os
         child_list = os.listdir(self.__fs_root)
         for child in child_list:
-            if child != self.__DATAPATH:
+            if (child != self.__DATAPATH) and (child != self.__CONTROLPATH):
                 from HashCalculator.HashCalculatorMD5 import HashCalculatorMD5
                 hashCalculator = HashCalculatorMD5()
                 if os.path.isfile("./" + child):
@@ -123,12 +120,15 @@ class HashDataStructure(object):
         'Se sono sicuro che la struttura sia presente la posso scrivere su file'
 
         out_file = open(self.__fs_root + "/" + self.__DATAPATH, "w")
-        self.__upToDate = True
-        data = "" + self.__upToDate + "\n"
+        data = ""
         for item in dataStructure:
             data = data + item + ":" + dataStructure[item] + "\n"
         out_file.write(data)
         out_file.close()
+        
+        # Aggiorno il booleano
+        self.update_boolean_file("True")
+
         self.release_data_structure()
 
     """
@@ -150,7 +150,8 @@ class HashDataStructure(object):
     """
     def insert_hash(self, fileName, content):
         data = self.get_data_structure_instance()
-        self.__upToDate = False
+        # Aggiorno il booleano
+        self.update_boolean_file("False")
         data[fileName] = content
         self.release_data_structure()
 
@@ -160,6 +161,19 @@ class HashDataStructure(object):
     """
     def remove_hash(self, fileName):
         data = self.get_data_structure_instance()
-        self.__upToDate = False
+        # Aggiorno il booleano
+        self.update_boolean_file("False")
         data.pop(fileName, None)
         self.release_data_structure()
+
+    """
+    Questo metodo aggiorna il file contenente il booleano che indica
+    se il file degli hash e' aggiornato o meno
+    """
+    def update_boolean_file(self, value):
+        bool_file = open(self.__fs_root + "/" + self.__CONTROLPATH, "w")
+        data = "" + value + "\n"
+        bool_file.write(data)
+        bool_file.close()        
+
+        self.__upToDate = value

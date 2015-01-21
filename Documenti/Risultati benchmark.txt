@@ -1,0 +1,25 @@
+danilo@danilo-desktop:/tmp/fuse$ bonnie++  -s 4 -r 2
+Writing a byte at a time...done
+Writing intelligently...done
+Rewriting...done
+Reading a byte at a time...done
+Reading intelligently...done
+start 'em...done...done...done...done...done...
+Create files in sequential order...done.
+Stat files in sequential order...done.
+Delete files in sequential order...done.
+Create files in random order...done.
+Stat files in random order...done.
+Delete files in random order...done.
+Version  1.97       ------Sequential Output------ --Sequential Input- --Random-
+Concurrency   1     -Per Chr- --Block-- -Rewrite- -Per Chr- --Block-- --Seeks--
+Machine        Size K/sec %CP K/sec %CP K/sec %CP K/sec %CP K/sec %CP  /sec %CP
+danilo-desktop   4M     3   9 +++++ +++ +++++ +++  1164  97 +++++ +++  9217  68
+Latency              3275ms   10458us    9625us   24286us    1340us     287ms
+Version  1.97       ------Sequential Create------ --------Random Create--------
+danilo-desktop      -Create-- --Read--- -Delete-- -Create-- --Read--- -Delete--
+              files  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP  /sec %CP
+                 16    10   0  3650   5    12   0    10   0  5750   7    12   0
+Latency               355ms   76414us     695ms     486ms   40008us     445ms
+1.97,1.97,danilo-desktop,1,1421890700,4M,,3,9,+++++,+++,+++++,+++,1164,97,+++++,+++,9217,68,16,,,,,10,0,3650,5,12,0,10,0,5750,7,12,0,3275ms,10458us,9625us,24286us,1340us,287ms,355ms,76414us,695ms,486ms,40008us,445ms
+danilo@danilo-desktop:/tmp/fuse$ 

@@ -5,7 +5,7 @@ class HashDataStructure(object):
     __INSTANCE = None
     __dataMap = None
     __fs_root = None
-    __upToDate = "True"
+    __upToDate = None
 
     __structureLock = None  # Semaforo per accedere alla struttura
 
@@ -35,7 +35,10 @@ class HashDataStructure(object):
             cls.__structureLock = Lock()
             cls.__structureLock.acquire()
             # Inizializzo la struttura dati
+            cls.__upToDate = HashDataStructure.__read_boolean_file(HashDataStructure.__INSTANCE)
             HashDataStructure.__inizialize_data_map(HashDataStructure.__INSTANCE)
+            # Aggiorno il booleano
+            HashDataStructure.__update_boolean_file(HashDataStructure.__INSTANCE, "False")
         else:
             cls.__structureLock.acquire()
         return cls.__dataMap
@@ -64,13 +67,11 @@ class HashDataStructure(object):
     def __inizialize_data_map(self):
         'Controllo se esiste il file degli hash'
         import os.path
-        if os.path.isfile(self.__fs_root + self.__DATAPATH):
+        if os.path.isfile(self.__fs_root + "/" + self.__DATAPATH):
             self.__load_data_map_from_file()
         else:
             out_file = open(self.__fs_root + self.__DATAPATH, "w")
             out_file.close()
-            # Aggiorno il booleano
-            self.update_boolean_file("True")
             HashDataStructure.__dataMap = dict()
 
     """
@@ -78,13 +79,11 @@ class HashDataStructure(object):
     """
     def __load_data_map_from_file(self):
         HashDataStructure.__dataMap = dict()
-        in_file = open(self.__fs_root + self.__DATAPATH, "r")
-
-        self.__upToDate = in_file.readline()
 
         if(self.__upToDate != "True"):
             self.__reloadAllHashes()
         else:
+            in_file = open(self.__fs_root + "/" + self.__DATAPATH, "r")
             'Carico gli hash da file'
             for line in in_file:
                 l = line.split(":")
@@ -125,9 +124,9 @@ class HashDataStructure(object):
             data = data + item + ":" + dataStructure[item] + "\n"
         out_file.write(data)
         out_file.close()
-        
+
         # Aggiorno il booleano
-        self.update_boolean_file("True")
+        self.__update_boolean_file("True")
 
         self.release_data_structure()
 
@@ -151,7 +150,6 @@ class HashDataStructure(object):
     def insert_hash(self, fileName, content):
         data = self.get_data_structure_instance()
         # Aggiorno il booleano
-        self.update_boolean_file("False")
         data[fileName] = content
         self.release_data_structure()
 
@@ -162,7 +160,6 @@ class HashDataStructure(object):
     def remove_hash(self, fileName):
         data = self.get_data_structure_instance()
         # Aggiorno il booleano
-        self.update_boolean_file("False")
         data.pop(fileName, None)
         self.release_data_structure()
 
@@ -170,10 +167,24 @@ class HashDataStructure(object):
     Questo metodo aggiorna il file contenente il booleano che indica
     se il file degli hash e' aggiornato o meno
     """
-    def update_boolean_file(self, value):
+    def __update_boolean_file(self, value):
         bool_file = open(self.__fs_root + "/" + self.__CONTROLPATH, "w")
-        data = "" + value + "\n"
+        data = value
         bool_file.write(data)
-        bool_file.close()        
+        bool_file.close()
 
         self.__upToDate = value
+
+    """
+    Questo metodo apre il file contenente il booleano e ne carica
+    il contenuto in memoria
+    """
+    def __read_boolean_file(self):
+        import os.path
+        if(not os.path.isfile(self.__fs_root + "/" + self.__CONTROLPATH)):
+            self.__upToDate = "False"
+        else:
+            bool_file = open(self.__fs_root + "/" + self.__CONTROLPATH, "r")
+            self.__upToDate = bool_file.readline()
+            bool_file.close()
+

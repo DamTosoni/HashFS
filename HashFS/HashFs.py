@@ -88,6 +88,10 @@ class HashFs(Fuse):  # Gestione del filesystem
             yield fuse.Direntry(e)
 
     def unlink(self, path):
+
+        if (path == "/.hashFSDataFile"):
+                raise EnvironmentError("Operation not permitted")
+
         os.unlink("." + path)
         # Rimuovo la relativa entry dalla struttura
         self.hash_data_structure.remove_hash(root_directory + path)
@@ -116,6 +120,10 @@ class HashFs(Fuse):  # Gestione del filesystem
 
 
     def rename(self, path, path1):
+
+        if (path == "/.hashFSDataFile"):
+                raise EnvironmentError("Operation not permitted")
+
         os.rename("." + path, "." + path1)
 
         # Una volta rinominato il file o la cartella, aggiorno la struttura dati contenente gli hash
@@ -177,6 +185,8 @@ class HashFs(Fuse):  # Gestione del filesystem
         os.chown("." + path, user, group)
 
     def truncate(self, path, len):
+        if (path == "/.hashFSDataFile"):
+                raise EnvironmentError("Operation not permitted")
         f = open("." + path, "a")
         f.truncate(len)
         f.close()
@@ -268,6 +278,7 @@ class HashFs(Fuse):  # Gestione del filesystem
             self.hash_calculator = hash_calculator
 
             self.root = root_directory
+            self.path = path
 
             if(os.path.isfile("." + path)):
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
@@ -279,6 +290,7 @@ class HashFs(Fuse):  # Gestione del filesystem
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
                                       flag2mode(flags))
                 self.fd = self.file.fileno()
+
                 # Aggiungo l'entry nella struttura e aggiorno i genitori
                 file_hash = self.hash_calculator.calculateFileHash("." + path)
                 self.hash_data_structure.insert_hash(root_directory + path, file_hash)
@@ -323,6 +335,8 @@ class HashFs(Fuse):  # Gestione del filesystem
             return os.fstat(self.fd)
 
         def ftruncate(self, len):
+            if (self.path == "/.hashFSDataFile"):
+                raise EnvironmentError("Operation not permitted")
             self.file.truncate(len)
 
         def lock(self, cmd, owner, **kw):

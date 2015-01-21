@@ -228,7 +228,6 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def getxattr(self, path, name, size):
         value = self.hash_data_structure.get_file_hash(self.root + path)
-        # value = "abc"
         if size == 0:
             # We are asked for size of the attr list, ie. joint size of attrs
             # plus null separators.
@@ -272,7 +271,6 @@ class HashFs(Fuse):  # Gestione del filesystem
 
     def fsdestroy(self, data=None):
         self.hash_data_structure.write_data_structure()
-        # pass
 
 
     class HashFSFile(object):  # Gestione dei file
@@ -298,17 +296,12 @@ class HashFs(Fuse):  # Gestione del filesystem
                 self.file = os.fdopen(os.open("." + path, flags, *mode),
                                       flag2mode(flags))
                 self.fd = self.file.fileno()
-                
+
                 # Aggiungo l'entry nella struttura e aggiorno i genitori
                 file_hash = self.hash_calculator.calculateFileHash("." + path)
                 self.hash_data_structure.insert_hash(root_directory + path, file_hash)
-                # parent_path = os.path.abspath(os.path.join(path, os.pardir))
                 parent_path = os.path.abspath(os.path.join(path, os.pardir))
                 if(parent_path != "/"):
-                # if(parent_path != root_directory):
-                    # parent_path = parent_path[1:]
-                    # parent_path += root_directory
-                    # raise ValueError("\n\n\n\n\n" + parent_path + "\n\n\n\n")
                     updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
         def read(self, length, offset):
@@ -336,7 +329,6 @@ class HashFs(Fuse):  # Gestione del filesystem
 
         def flush(self):
             self._fflush()
-            # cf. xmp_flush() in fusexmp_fh.c
             os.close(os.dup(self.fd))
 
         def fgetattr(self):

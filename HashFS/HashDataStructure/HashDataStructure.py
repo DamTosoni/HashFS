@@ -1,5 +1,5 @@
 from threading import Lock
-# from HashFs import hash_calculator
+
 class HashDataStructure(object):
 
     __INSTANCE = None
@@ -164,7 +164,7 @@ class HashDataStructure(object):
     """
     def remove_hash(self, fileName):
         data = self.get_data_structure_instance()
-        
+
         # Aggiorno il booleano
         data.pop(fileName, None)
         self.release_data_structure()

@@ -91,7 +91,7 @@ class HashFs(Fuse):  # Gestione del filesystem
             yield fuse.Direntry(e)
 
     def unlink(self, path):
-        if (path == "/.hashFSDataFile"):
+        if (path == "/.hashFSDataFile") or (path == "/.hashFSUpToDate"):
                 raise EnvironmentError("Operation not permitted")
 
         os.unlink("." + path)
@@ -126,7 +126,7 @@ class HashFs(Fuse):  # Gestione del filesystem
             updateDirectoryHash(parent_path, self.hash_data_structure, self.hash_calculator)
 
     def rename(self, path, path1):
-        if (path == "/.hashFSDataFile"):
+        if (path == "/.hashFSDataFile") or (path == "/.hashFSUpToDate"):
                 raise EnvironmentError("Operation not permitted")
 
         os.rename("." + path, "." + path1)
@@ -191,7 +191,7 @@ class HashFs(Fuse):  # Gestione del filesystem
         os.chown("." + path, user, group)
 
     def truncate(self, path, len):
-        if (path == "/.hashFSDataFile"):
+        if (path == "/.hashFSDataFile") or (path == "/.hashFSUpToDate"):
                 raise EnvironmentError("Operation not permitted")
         f = open("." + path, "a")
         f.truncate(len)
@@ -342,7 +342,7 @@ class HashFs(Fuse):  # Gestione del filesystem
             return os.fstat(self.fd)
 
         def ftruncate(self, len):
-            if (self.path == "/.hashFSDataFile"):
+            if (self.path == "/.hashFSDataFile") or (self.path == "/.hashFSUpToDate"):
                 raise EnvironmentError("Operation not permitted")
             self.file.truncate(len)
 

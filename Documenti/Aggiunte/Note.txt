@@ -1,0 +1,23 @@
+Mi sono letto la tesina e scrivo un po' di considerazioni qui così mi evito di inviare un megamessaggio... :-)
+
+ABSTRACT
+ Motivazioni: Toglierei la parte tra parentesi relativa alla sicurezza dell'OS, tanto non abbiamo implementato niente del genere nella tesina
+ Risultati: Alla luce di quanto visto toglierei che le prestazioni sono risultate accettabili
+ 
+
+RACCOLTA INFORMAZIONI
+- Nell'ultima frase del paragrafo ti sei perso un "del" (filesystem)
+
+BENCHMARK
+- Ho visto quello che hai scritto sul benchmark e l'ho ampliato con un po' di roba trovata su internet oltre ad aggiungere i risultati
+- Ti mando un file a parte perché LibreOffice  non visualizza correttamente il file del repository. Poi ci pensi tu ad unire...
+- Ho tolto il riferimento al fatto che non siamo riusciti ad usare IOzone perché non vorrei fosse controproducente...
+
+DEFINIZIONE DELL'ARCHITETTURA
+- C'è un errore nella spiegazione di .hashFSUpToDate; il filesystem viene considerato corrotto se il valore contenuto è false
+- Non penso che esista il termine sistema a semaforo... Io scriverei è stato implementato un semaforo binario
+
+IMPLEMENTAZIONE DEL FILESYSTEM
+- Ma mettersi a spiegare ogni singola funzione di Fuse non è troppo pedante? Forse conviene farne una descrizione complessiva e poi mettere in una sezione a parte l'elenco con i nomi se vogliamo suddividere il lavoro a livello di funzioni
+- Ho aggiunto un file con la descrizione di HashDataStructure, vedi tu come integrarla nella tesina
+
